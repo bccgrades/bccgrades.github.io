@@ -7,13 +7,20 @@
 
 # testing
 /coverage
+.eslintcache
 
 # next.js
 /.next/
 /out/
 
-# production
+# compiled production output
 /build
+/dist
+
+# other build caches
+/.cache/
+/.parcel-cache/
+/.turbo/
 
 # misc
 .DS_Store

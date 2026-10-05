@@ -1,5 +1,6 @@
 import React from "react";
 import { useRouter } from "next/router";
+import { publicPath } from "../lib/paths";
 
 export default function FAQ() {
 	const router = useRouter();
@@ -41,7 +42,7 @@ export default function FAQ() {
 					<p className="px-4 mt-4 leading-relaxed dark:text-white">
 						<span className="flex gap-2 items-center">
 							Apple iPhone/iPad
-							<img className="h-4 inline-block" src="/assets/apple.png" />
+							<img className="h-4 inline-block" src={publicPath("/assets/apple.png")} />
 						</span>
 					</p>
 					<ul className="list-disc pl-10 dark:text-white">
@@ -52,7 +53,7 @@ export default function FAQ() {
 					<p className="px-4 mt-4 leading-relaxed dark:text-white">
 						<span className="flex gap-2 items-center">
 							Android
-							<img className="h-4 inline-block" src="/assets/android.png" />
+							<img className="h-4 inline-block" src={publicPath("/assets/android.png")} />
 						</span>
 					</p>
 					<ul className="list-disc ml-10 dark:text-white">
@@ -64,7 +65,7 @@ export default function FAQ() {
 					<p className="px-4 mt-4 leading-relaxed dark:text-white">
 						<span className="flex gap-2 items-center">
 							Personal Computer
-							<img className="h-4 inline-block" src="/assets/pc.png" />
+							<img className="h-4 inline-block" src={publicPath("/assets/pc.png")} />
 						</span>
 					</p>
 					<ul className="list-disc ml-10 dark:text-white">

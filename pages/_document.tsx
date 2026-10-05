@@ -5,8 +5,14 @@ export default class MyDocument extends Document {
 		return (
 			<Html>
 				<Head>
-          <link rel="manifest" href="/manifest.json" />
-					<link rel="apple-touch-icon" href="/assets/icon.png" />
+          <link
+          	rel="manifest"
+          	href={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/manifest.json`}
+          />
+          <link
+          	rel="apple-touch-icon"
+          	href={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/assets/icon.png`}
+          />
 				</Head>
 				<body>
 					<Main />

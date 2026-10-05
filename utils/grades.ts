@@ -91,17 +91,28 @@ const letterGradeColor = (letterGrade: string) => {
 }catch(error){return "gray"}
 };
 
-const letterGrade = (grade: number,gradingScale:gradingScale): string => {
-	const rounding=gradingScale.rounding;
-if(rounding.percent){
+const letterGrade = (grade: number,gradingScale?:gradingScale): string => {
+	const rounding=gradingScale?.rounding;
+if(rounding?.percent){
 	grade=Number(grade.toFixed(rounding.percentPlaces))
 
 }
 
+	const ranges = gradingScale
+	? Object.entries(gradingScale).filter(([name, range]) => {
+			if (name === "rounding") return false;
+			return (
+				Array.isArray(range) &&
+				range.length >= 2 &&
+				typeof range[0] === "number" &&
+				typeof range[1] === "number"
+			);
+		})
+	: [];
 
-if(!gradingScale){
+if(!gradingScale || ranges.length === 0){
 	if (grade >= 89.5) {
-		return "A";
+	return "A";
 	} else if (grade >= 79.5) {
 		return "B";
 	} else if (grade >= 69.5) {
@@ -114,9 +125,9 @@ if(!gradingScale){
 		return "N/A";
 	}}
 else{
-	for(const letterGrade in gradingScale){
+	for(const [letterGrade, range] of ranges){
 		if(grade>100){return letterGrade}
-		if(grade>=gradingScale[letterGrade][0]&&grade<=gradingScale[letterGrade][1]){
+		if(grade>=range[0]&&grade<=range[1]){
 			
 			return letterGrade
 		}

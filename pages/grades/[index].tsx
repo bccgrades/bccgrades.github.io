@@ -37,6 +37,21 @@ interface OptimizeProps {
 	[key: string]: number;
 }
 
+export function getStaticPaths() {
+	// Course data is loaded after login, so it is not available at build time.
+	// Generate enough static entry points for the client-side course links.
+	return {
+		paths: Array.from({ length: 100 }, (_, index) => ({
+			params: { index: String(index) },
+		})),
+		fallback: false,
+	};
+}
+
+export function getStaticProps() {
+	return { props: {} };
+}
+
 export default function Grades({
 	client,
 	grades,

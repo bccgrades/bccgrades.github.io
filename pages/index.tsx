@@ -10,6 +10,7 @@ import { IoDocumentTextOutline } from "react-icons/io5";
 import { FiMoon } from "react-icons/fi";
 import { BsGraphUp } from "react-icons/bs";
 import { motion } from "framer-motion";
+import { publicPath } from "../lib/paths";
 
 interface HomeProps {
 	client: any;
@@ -119,7 +120,7 @@ export default function Home({ client }: HomeProps) {
 						animate={{ y: 0, opacity: 1 }}
 						transition={{ delay: 0.3, duration: 0.5 }}
 						className="h-96 w-full"
-						src="/assets/herolight.svg"
+						src={publicPath("/assets/herolight.svg")}
 						alt="mockup"
 					/>
 				</div>
@@ -129,7 +130,7 @@ export default function Home({ client }: HomeProps) {
 						animate={{ y: 0, opacity: 1 }}
 						transition={{ delay: 0.3, duration: 0.5 }}
 						className="h-96 w-full"
-						src="/assets/hero.svg"
+						src={publicPath("/assets/hero.svg")}
 						alt="mockup"
 					/>
 				</div>
@@ -213,7 +214,7 @@ export default function Home({ client }: HomeProps) {
 					animate={{ y: 0, opacity: 1 }}
 					transition={{ delay: 0.2, duration: 0.5 }}
 					className="h-96 w-full hidden lg:block dark:hidden"
-					src="/assets/opensourcelight.svg"
+					src={publicPath("/assets/opensourcelight.svg")}
 					alt="Open Source"
 				/>
 				<motion.img
@@ -221,7 +222,7 @@ export default function Home({ client }: HomeProps) {
 					animate={{ y: 0, opacity: 1 }}
 					transition={{ delay: 0.2, duration: 0.5 }}
 					className="h-96 w-full hidden lg:dark:block"
-					src="/assets/opensource.svg"
+					src={publicPath("/assets/opensource.svg")}
 					alt="Open Source"
 				/>
 			</div>

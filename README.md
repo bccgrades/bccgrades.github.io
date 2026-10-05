@@ -24,6 +24,24 @@ Run the development server
 ```
 npm run dev
 ```
+
+## Deploy to GitHub Pages
+
+The project is configured for a fully static Next.js export. The production build
+creates an `out/` directory containing `index.html` and the other page HTML files,
+along with their bundled assets.
+
+To build it locally:
+```
+npm run export
+```
+
+The included [GitHub Pages workflow](./.github/workflows/deploy-pages.yml) builds
+and deploys the site automatically whenever `main` is updated. It automatically
+sets the repository base path so project Pages sites work at
+`https://<user>.github.io/<repository>/`. In the repository settings, set
+**Pages → Build and deployment → Source** to **GitHub Actions**.
+
 ### Testing PWA
 Mobile specific PWA testing can be tested by running the development server and accessing the website on your local network. For more information, check out [this](https://stackoverflow.com/questions/19482164/how-can-i-access-localhost-from-another-computer-in-the-same-network).
 

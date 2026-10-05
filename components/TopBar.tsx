@@ -8,6 +8,7 @@ import { MdOutlinePrivacyTip } from "react-icons/md";
 import Cookies from "js-cookie";
 import dynamic from "next/dynamic";
 import {useRouter} from "next/router";
+import { publicPath } from "../lib/paths";
 
 interface TopBarProps {
 	studentInfo: any;
@@ -135,7 +136,7 @@ try{
 				<div className="flex flex-wrap justify-between items-center">
 					<Link href={client ? "/grades" : "/"} className="flex items-center">
 						<img
-							src="/assets/logo.png"
+							src={publicPath("/assets/logo.png")}
 							className="mr-3 h-6 sm:h-9"
 							alt="Grade Melon Logo"
 						/>
@@ -171,7 +172,7 @@ try{
 											src={
 												studentInfo?.photo
 													? `data:image/png;base64,${studentInfo.photo}`
-													: "/assets/default-avatar.svg"
+													: publicPath("/assets/default-avatar.svg")
 											}
 											alt="User Icon"
 										/>
@@ -234,7 +235,7 @@ try{
 				{!advertiseBrowser && partner && (
 					<div ref={elementRef} className={`w-full bg-primary-11 px-4 py-3 text-white bg-opacity-90`}>
 						<p className="text-center text-sm font-medium flex gap-2 justify-center items-center">
-							<img src="/assets/partner.webp" alt="" />
+							<img src={publicPath("/assets/partner.webp")} alt="" />
 							<Link
 								onClick={closePartner}
 								href="https://klinn.works/"
