@@ -1,4 +1,5 @@
 import Document, { Html, Head, Main, NextScript } from "next/document";
+import { publicPath } from "../lib/paths";
 
 export default class MyDocument extends Document {
 	render() {
@@ -8,15 +9,15 @@ export default class MyDocument extends Document {
 					<link
 						rel="icon"
 						type="image/png"
-						href={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/favicon.png`}
+						href={publicPath("/favicon.png")}
 					/>
           <link
           	rel="manifest"
-          	href={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/manifest.json`}
+          	href={publicPath("/manifest.json")}
           />
           <link
           	rel="apple-touch-icon"
-          	href={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/assets/icon.png`}
+          	href={publicPath("/assets/icon.png")}
           />
 				</Head>
 				<body>

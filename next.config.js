@@ -4,14 +4,16 @@ const withPwa = require("next-pwa")({
 	skipWaiting: true,
 });
 
+const basePath = (process.env.NEXT_PUBLIC_BASE_PATH || "").replace(/\/+$/, "");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = withPwa({
 	swcMinify: false,
 	reactStrictMode: true,
 	output: "export",
 	trailingSlash: true,
-	basePath: process.env.NEXT_PUBLIC_BASE_PATH || "",
-	assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || undefined,
+	basePath,
+	assetPrefix: basePath || undefined,
 	images: {
 		unoptimized: true,
 	},
