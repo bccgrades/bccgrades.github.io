@@ -5,6 +5,11 @@ export default class MyDocument extends Document {
 		return (
 			<Html>
 				<Head>
+					<link
+						rel="icon"
+						type="image/png"
+						href={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/favicon.png`}
+					/>
           <link
           	rel="manifest"
           	href={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/manifest.json`}
