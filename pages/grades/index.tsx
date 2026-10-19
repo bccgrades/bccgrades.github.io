@@ -39,6 +39,7 @@ export default function Grades({
 	//const [period, setPeriod] = useState<number>();
 	const [gpaModal, setGpaModal] = useState(false);
 	const view = (router.query.view as string) || defaultView;
+	const selectedPeriod = period ?? currentPeriod ?? grades?.period.index;
 
 	useEffect(() => {
 		if (localStorage.getItem("defaultView") !== null) {
@@ -54,16 +55,18 @@ export default function Grades({
 	}, [router.query.view]);
 
 	useEffect(() => {
+		if (currentPeriod !== undefined) {
+			setPeriod(currentPeriod);
+		}
+	}, [currentPeriod, setPeriod]);
+
+	useEffect(() => {
 		try {
 			if (!grades && client) {
-				//setLoading(true);
 				try {
-					client.gradebook(undefined, undefined, true).then((res) => {
+					client.gradebook(undefined, undefined, false).then((res) => {
 						let parsedGrades = parseGrades(unwrapStudentVueResponse(res));
-						console.log("checker")
-						console.log(res);
 						setGrades(parsedGrades);
-						console.log(parsedGrades)
 						setPeriod(parsedGrades.period.index);
 						setLoading(false);
 					});
@@ -80,13 +83,11 @@ export default function Grades({
 		}
 	}, [client]);
 
-	const update = (p: number, forceRefresh = false) => {
-		console.log(p);
+	const update = (p: number) => {
 		setLoading(true);
 		client
-			.gradebook(p, undefined, forceRefresh || p === currentPeriod)
+			.gradebook(p, undefined, false)
 			.then((res) => {
-				console.log(res);
 				setGrades(parseGrades(unwrapStudentVueResponse(res)));
 				setLoading(false);
 				setPeriod(p);
@@ -96,6 +97,47 @@ export default function Grades({
 				createError(err.message);
 				setLoading(false);
 			});
+	};
+
+	const refresh = async () => {
+		const activePeriod = currentPeriod;
+		const selected = selectedPeriod ?? activePeriod;
+
+		if (!grades || activePeriod === undefined || selected === undefined) {
+			return;
+		}
+
+		setLoading(true);
+		try {
+			const periodsToLoad = grades.periods.filter(
+				({ index }) => index <= activePeriod || index === selected
+			);
+			const responses = await Promise.all(
+				periodsToLoad.map(async ({ index }) => ({
+					index,
+					response: await client.gradebook(
+						index,
+						undefined,
+						index <= activePeriod
+					),
+				}))
+			);
+			const selectedResponse = responses.find(({ index }) => index === selected);
+
+			if (!selectedResponse) {
+				throw new Error("Selected period is unavailable");
+			}
+
+			setGrades(
+				parseGrades(unwrapStudentVueResponse(selectedResponse.response))
+			);
+			setPeriod(selected);
+		} catch (err) {
+			console.log(err);
+			createError(err.message);
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	useEffect(() => {
@@ -161,7 +203,7 @@ export default function Grades({
 					<div className="flex gap-2 mb-5">
 						<button
 							type="button"
-							onClick={() => update(period, true)}
+							onClick={refresh}
 							className="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm p-2.5 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700"
 						>
 							<TbRefresh size={"1.3rem"} />
@@ -169,7 +211,7 @@ export default function Grades({
 						<select
 							id="periods"
 							onChange={(e) => update(parseInt(e.target.value))}
-							value={period}
+							value={selectedPeriod}
 							className="block w-full p-2 text-sm text-gray-900 bg-white rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
 						>
 							{grades?.periods.map((period) => (

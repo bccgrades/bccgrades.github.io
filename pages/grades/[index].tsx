@@ -82,8 +82,7 @@ export default function Grades({
 	useEffect(() => {
 		try {
 			if (!grades&&client) {
-				client.gradebook(undefined, undefined, true).then((res) => {
-					console.log(typeof index);
+				client.gradebook(undefined, undefined, false).then((res) => {
 					let parsedGrades = parseGrades(unwrapStudentVueResponse(res));
 					setGrades(parsedGrades);
 					setPeriod(parsedGrades.period.index);
@@ -153,12 +152,10 @@ export default function Grades({
 	};
 
 	const update = (p: number, forceRefresh = false) => {
-		console.log(p);
 		setLoading(true);
 		client
-			.gradebook(p, undefined, forceRefresh || p === currentPeriod)
+			.gradebook(p, undefined, forceRefresh)
 			.then((res) => {
-				console.log(res);
 				setGrades(parseGrades(unwrapStudentVueResponse(res)));
 				setPeriod(p);
 				setLoading(false);

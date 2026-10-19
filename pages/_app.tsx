@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "../styles/globals.css";
-import StudentVue, { Client } from "studentvue";
+import { Client } from "studentvue";
 import { useRouter } from "next/router";
 import { Flowbite, Toast, useTheme } from "flowbite-react";
 import Topbar from "../components/TopBar";
@@ -16,7 +16,6 @@ import { Analytics } from "@vercel/analytics/react";
 import allDistricts from "../lib/districts";
 import Script from "next/script";
 import {
-	getStudentVueLoginResult,
 	unwrapStudentVueResponse,
 } from "../utils/studentvue";
 
@@ -24,6 +23,7 @@ interface Toast {
 	title: string;
 	type: "success" | "error" | "warning" | "info";
 }
+
 
 const noShowNav = ["/login", "/", "/privacy", "/letter","/faq"];
 
@@ -52,51 +52,54 @@ function MyApp({ Component, pageProps }) {
 		url?: string,
 		encrypted?:boolean
 	) => {
-		await setLoading(true);
-		await StudentVue.login(url || districtURL, {
+		setLoading(true);
+		const district = url || districtURL;
+		const districtEndpoint = district.endsWith("/")
+			? `${district}Service/PXPCommunication.asmx`
+			: `${district}/Service/PXPCommunication.asmx`;
+		const fetchedClient = new Client({
 			username: username,
 			password: password,
-			encrypted:encrypted ||false
-		})
-			.then(async (res) => {
-				const { client: fetchedClient } = getStudentVueLoginResult(
-					res
-				);
-				const freshGradebook = await fetchedClient.gradebook(
-					undefined,
-					undefined,
-					true
-				);
-				await setClient(fetchedClient);
-				districts.forEach(district=>{
-					if(district.parentVueUrl==districtURL){Cookies.set("districtURL",JSON.stringify(district),{expires:7})}
-				});
-				if (save) {
-					localStorage.setItem("remember", "true");
-					Cookies.set("username",username,{expires:7,secure:false,sameSite:"Lax"})
-					if(!encrypted){
-						await fetch("https://studentvuelib.up.railway.app" + "/encryptPassword", {
-							'method': 'POST',
-							'headers': { 'Content-Type': 'application/json' },
-							'body': JSON.stringify({ 'password': password })
-						}).then(async(response)=>{
-							const result=await response.json()
-							Cookies.set("password",result.encryptedPassword,{expires:7})
-						})}
-						
-				} else {
-					localStorage.setItem("remember", "false");
-					Cookies.remove("username");
-					Cookies.remove("password");
-					Cookies.remove("districtURL");
+			districtUrl: districtEndpoint,
+			encrypted: encrypted || false,
+		}, "https://studentvuelib.up.railway.app");
+			let passwordSave = Promise.resolve();
+			if (save) {
+				localStorage.setItem("remember", "true");
+				Cookies.set("username", username, { expires: 7, secure: false, sameSite: "Lax" });
+				if (!encrypted) {
+					passwordSave = fetch("https://studentvuelib.up.railway.app/encryptPassword", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ password }),
+					}).then(async (response) => {
+						const result = await response.json();
+						Cookies.set("password", result.encryptedPassword, { expires: 7 });
+					});
 				}
-				const parsedGrades=parseGrades(unwrapStudentVueResponse(freshGradebook));
-				await setGrades(parsedGrades);
-				await setCurrentPeriod(parsedGrades.period.index);
-				await setPeriod(parsedGrades.period.index);
+			} else {
+				localStorage.setItem("remember", "false");
+				Cookies.remove("username");
+				Cookies.remove("password");
+				Cookies.remove("districtURL");
+			}
+			districts.forEach(district=>{
+				if(district.parentVueUrl==districtURL){Cookies.set("districtURL",JSON.stringify(district),{expires:7})}
+			});
+			passwordSave.catch((err) => {
+				console.log(err);
+				createError(err.message);
+			});
+
+			await fetchedClient.gradebook(undefined, undefined, true).then((freshGradebook) => {
+				setClient(fetchedClient);
+				const rawGradebook = unwrapStudentVueResponse(freshGradebook);
+				const parsedGrades=parseGrades(rawGradebook);
+				setGrades(parsedGrades);
+				setCurrentPeriod(parsedGrades.period.index);
+				setPeriod(parsedGrades.period.index);
 				if(router.pathname=="/"||router.pathname=="/login"){router.push("/grades")}
-				
-				await setLoading(false);
+				setLoading(false);
 				return true;
 			})
 			.catch((err) => {
@@ -186,7 +189,6 @@ function MyApp({ Component, pageProps }) {
 		if (!router.isReady || router.pathname !== "/" || client !== undefined) {
 			return;
 		}
-
 		const hasSavedCredentials =
 			Cookies.get("username") !== undefined &&
 			Cookies.get("password") !== undefined &&
@@ -204,11 +206,11 @@ function MyApp({ Component, pageProps }) {
 		for(let key in preSets){
 			if(message.toLowerCase().includes(key)){var message=preSets[key];break}
 		}
-	
+
 		setToasts((toasts) => [...toasts, { title: message, type: "error" }]);
-			setTimeout(() => {
-				setToasts((toasts) => toasts.slice(1));
-			}, 5000);
+		setTimeout(() => {
+			setToasts((toasts) => toasts.slice(1));
+		}, 5000);
 	}
 
 const logout = async () => {
