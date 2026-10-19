@@ -38,6 +38,7 @@ function MyApp({ Component, pageProps }) {
 	const [grades, setGrades] = useState<Grades>();
 	const [period, setPeriod] = useState<number>();
 	const [loading, setLoading] = useState(false);
+	const [rootAuthChecked, setRootAuthChecked] = useState(false);
 	const [referal,setReferal]=useState(false);
 	const [districts, setDistricts] = useState(allDistricts);
 	const { width } = useWindowSize();
@@ -95,6 +96,10 @@ function MyApp({ Component, pageProps }) {
 				console.log(err);
 				createError(err.message)
 				setLoading(false);
+				if (router.pathname === "/") {
+					setRootAuthChecked(true);
+					router.replace("/login");
+				}
 			});
 
 		return false;
@@ -170,6 +175,22 @@ function MyApp({ Component, pageProps }) {
 		}else{if(client===undefined&&(!noShowNav.includes(router.pathname)||router.pathname=="/")&&!refURL){console.log("SHIT FUCK");router.push("/login")}}
 	}, [client,districtURL]);
 
+	useEffect(() => {
+		if (!router.isReady || router.pathname !== "/" || client !== undefined) {
+			return;
+		}
+
+		const hasSavedCredentials =
+			Cookies.get("username") !== undefined &&
+			Cookies.get("password") !== undefined &&
+			Cookies.get("districtURL") !== undefined;
+
+		if (!hasSavedCredentials && !loading) {
+			router.replace("/login");
+			setRootAuthChecked(true);
+		}
+	}, [client, loading, router.isReady, router.pathname]);
+
 	function createError(message:string){
 		console.log("Verbose Error: ",message)
 		const preSets={"upgraded":"API Token Expired, come back soon?","incorrect":"Username or Password is Incorrect","invalid":"Username or Password is Incorrect","load failed":"Network Error","failed to fetch":"Network Error:Try Again Later","socket":"Network Error"};
@@ -196,6 +217,10 @@ const logout = async () => {
 	Cookies.remove("districtURL");
 
 };
+
+	if (router.pathname === "/" && (client === undefined || !rootAuthChecked)) {
+		return null;
+	}
 
 	// useEffect(() => {
 	// 	let username = localStorage.getItem("username");
