@@ -37,6 +37,7 @@ function MyApp({ Component, pageProps }) {
 	const [toasts, setToasts] = useState<Toast[]>([]);
 	const [grades, setGrades] = useState<Grades>();
 	const [period, setPeriod] = useState<number>();
+	const [currentPeriod, setCurrentPeriod] = useState<number>();
 	const [loading, setLoading] = useState(false);
 	const [rootAuthChecked, setRootAuthChecked] = useState(false);
 	const [referal,setReferal]=useState(false);
@@ -58,8 +59,13 @@ function MyApp({ Component, pageProps }) {
 			encrypted:encrypted ||false
 		})
 			.then(async (res) => {
-				const { client: fetchedClient, gradebook } = getStudentVueLoginResult(
+				const { client: fetchedClient } = getStudentVueLoginResult(
 					res
+				);
+				const freshGradebook = await fetchedClient.gradebook(
+					undefined,
+					undefined,
+					true
 				);
 				await setClient(fetchedClient);
 				districts.forEach(district=>{
@@ -84,8 +90,9 @@ function MyApp({ Component, pageProps }) {
 					Cookies.remove("password");
 					Cookies.remove("districtURL");
 				}
-				const parsedGrades=parseGrades(gradebook);
+				const parsedGrades=parseGrades(unwrapStudentVueResponse(freshGradebook));
 				await setGrades(parsedGrades);
+				await setCurrentPeriod(parsedGrades.period.index);
 				await setPeriod(parsedGrades.period.index);
 				if(router.pathname=="/"||router.pathname=="/login"){router.push("/grades")}
 				
@@ -209,6 +216,7 @@ const logout = async () => {
 	await router.push("/login");
 	 setClient(undefined);
 	 setGrades(undefined);
+	setCurrentPeriod(undefined);
 	
 	
 	setStudentInfo(undefined);
@@ -292,6 +300,7 @@ const logout = async () => {
 								loading={loading}
 								period={period}
 								setPeriod={setPeriod}
+								currentPeriod={currentPeriod}
 								createError={createError}
 								districts={districts}
 								setDistricts={setDistricts}
@@ -317,6 +326,7 @@ const logout = async () => {
 										loading={loading}
 										period={period}
 										setPeriod={setPeriod}
+										currentPeriod={currentPeriod}
 										createError={createError}
 										districts={districts}
 										setDistricts={setDistricts}
@@ -342,6 +352,7 @@ const logout = async () => {
 										loading={loading}
 										period={period}
 										setPeriod={setPeriod}
+										currentPeriod={currentPeriod}
 										createError={createError}
 										districts={districts}
 										setDistricts={setDistricts}

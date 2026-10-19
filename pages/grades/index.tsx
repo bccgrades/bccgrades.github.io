@@ -20,6 +20,7 @@ interface GradesProps {
 	setGrades: (grades: GradesType) => void;
 	period: number;
 	setPeriod: (period: number) => void;
+	currentPeriod?: number;
 	createError:(message:string)=>void;
 }
 
@@ -29,6 +30,7 @@ export default function Grades({
 	setGrades,
 	period,
 	setPeriod,
+	currentPeriod,
 	createError
 }: GradesProps) {
 	const router = useRouter();
@@ -56,7 +58,7 @@ export default function Grades({
 			if (!grades && client) {
 				//setLoading(true);
 				try {
-					client.gradebook().then((res) => {
+					client.gradebook(undefined, undefined, true).then((res) => {
 						let parsedGrades = parseGrades(unwrapStudentVueResponse(res));
 						console.log("checker")
 						console.log(res);
@@ -78,11 +80,11 @@ export default function Grades({
 		}
 	}, [client]);
 
-	const update = (p: number) => {
+	const update = (p: number, forceRefresh = false) => {
 		console.log(p);
 		setLoading(true);
 		client
-			.gradebook(p)
+			.gradebook(p, undefined, forceRefresh || p === currentPeriod)
 			.then((res) => {
 				console.log(res);
 				setGrades(parseGrades(unwrapStudentVueResponse(res)));
@@ -159,7 +161,7 @@ export default function Grades({
 					<div className="flex gap-2 mb-5">
 						<button
 							type="button"
-							onClick={() => update(period)}
+							onClick={() => update(period, true)}
 							className="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm p-2.5 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700"
 						>
 							<TbRefresh size={"1.3rem"} />
