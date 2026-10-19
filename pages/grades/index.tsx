@@ -12,6 +12,7 @@ import {
 } from "../../utils/grades";
 import { Modal } from "flowbite-react";
 import { motion } from "framer-motion";
+import { unwrapStudentVueResponse } from "../../utils/studentvue";
 
 interface GradesProps {
 	client: any;
@@ -56,7 +57,7 @@ export default function Grades({
 				//setLoading(true);
 				try {
 					client.gradebook().then((res) => {
-						let parsedGrades = parseGrades(res);
+						let parsedGrades = parseGrades(unwrapStudentVueResponse(res));
 						console.log("checker")
 						console.log(res);
 						setGrades(parsedGrades);
@@ -84,7 +85,7 @@ export default function Grades({
 			.gradebook(p)
 			.then((res) => {
 				console.log(res);
-				setGrades(parseGrades(res));
+				setGrades(parseGrades(unwrapStudentVueResponse(res)));
 				setLoading(false);
 				setPeriod(p);
 			})

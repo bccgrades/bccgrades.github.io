@@ -72,6 +72,15 @@ interface Grades {
 	}[];
 }
 
+const defaultGradingScale: gradingScale = {
+	rounding: { percent: true, percentPlaces: 2, mark: false, markPlaces: 0 },
+	A: [89.5, 100],
+	B: [79.5, 89.49],
+	C: [69.5, 79.49],
+	D: [59.5, 69.49],
+	E: [0, 59.49],
+};
+
 
 const letterGradeColor = (letterGrade: string) => {
 	try{
@@ -228,7 +237,7 @@ const parseAssignmentName = (name: string): string => {
 };
 
 const parseGrades = (grades: Gradebook): Grades => {
-	const gradingScale=grades.gradingScale;
+	const gradingScale=grades.gradingScale ?? defaultGradingScale;
 	for (let i = 0; i < grades.courses.length; i++) {
 		if (grades.courses[i].marks.length === 0) {
 			grades.courses[i].marks = [

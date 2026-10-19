@@ -16,6 +16,7 @@ import GradeField from "../../components/GradeField";
 import CategoryField from "../../components/CategoryField";
 import Head from "next/head";
 import { motion } from "framer-motion";
+import { unwrapStudentVueResponse } from "../../utils/studentvue";
 
 //icons
 import { TbRefresh } from "react-icons/tb";
@@ -78,7 +79,7 @@ export default function Grades({
 			if (!grades&&client) {
 				client.gradebook().then((res) => {
 					console.log(typeof index);
-					let parsedGrades = parseGrades(res);
+					let parsedGrades = parseGrades(unwrapStudentVueResponse(res));
 					setGrades(parsedGrades);
 					setPeriod(parsedGrades.period.index);
 					setLoading(false);

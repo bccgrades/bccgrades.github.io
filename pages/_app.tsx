@@ -15,6 +15,10 @@ import useWindowSize from '../hooks/useWindowSize';
 import { Analytics } from "@vercel/analytics/react";
 import allDistricts from "../lib/districts";
 import Script from "next/script";
+import {
+	getStudentVueLoginResult,
+	unwrapStudentVueResponse,
+} from "../utils/studentvue";
 
 interface Toast {
 	title: string;
@@ -53,10 +57,9 @@ function MyApp({ Component, pageProps }) {
 			encrypted:encrypted ||false
 		})
 			.then(async (res) => {
-				const gradebook=res[1];
-				const fetchedClient=res[0];
-				console.log("para me?")
-				console.log(fetchedClient);
+				const { client: fetchedClient, gradebook } = getStudentVueLoginResult(
+					res
+				);
 				await setClient(fetchedClient);
 				districts.forEach(district=>{
 					if(district.parentVueUrl==districtURL){Cookies.set("districtURL",JSON.stringify(district),{expires:7})}
@@ -125,6 +128,7 @@ function MyApp({ Component, pageProps }) {
 	useEffect(()=>{
 		if(client!==undefined&&studentInfo==undefined){
 			client.studentInfo().then(info=>{
+				info = unwrapStudentVueResponse(info);
 				setStudentInfo(info)
 				fetch("https://studentvuelib.up.railway.app" + "/logLogin", {
 					'method': 'POST',
@@ -132,6 +136,7 @@ function MyApp({ Component, pageProps }) {
 					'body': JSON.stringify({ 'username': client.username,'schoolName':info.currentSchool})
 				})
 			}).catch(error=>{client.ChildList().then(info=>{
+				info = unwrapStudentVueResponse(info);
 				setStudentInfo(info);
 				fetch("https://studentvuelib.up.railway.app" + "/logLogin", {
 					'method': 'POST',
