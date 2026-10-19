@@ -42,7 +42,7 @@ export function getStaticPaths() {
 	// Course data is loaded after login, so it is not available at build time.
 	// Generate enough static entry points for the client-side course links.
 	return {
-		paths: Array.from({ length: 100 }, (_, index) => ({
+		paths: Array.from({ length: 20 }, (_, index) => ({
 			params: { index: String(index) },
 		})),
 		fallback: false,
@@ -64,7 +64,10 @@ export default function Grades({
 }: GradesProps) {
 	const router = useRouter();
 	const { index }: { index?: string } = router.query;
-	const course = grades?.courses[parseInt(index as string)];
+	const courseIndex = Number.parseInt(index ?? "", 10);
+	const course = Number.isInteger(courseIndex)
+		? grades?.courses[courseIndex]
+		: undefined;
 	const [loading, setLoading] = useState(grades ? false : true);
 	const [showModal, setShowModal] = useState(false);
 	const [modalDetails, setModalDetails] = useState(0);
@@ -154,7 +157,7 @@ export default function Grades({
 			.gradebook(p)
 			.then((res) => {
 				console.log(res);
-				setGrades(parseGrades(res));
+				setGrades(parseGrades(unwrapStudentVueResponse(res)));
 				setPeriod(p);
 				setLoading(false);
 			})
@@ -194,6 +197,16 @@ export default function Grades({
 		let results = genTable(course, optimizeProps.desiredGrade, points);
 		setSolution(results);
 	};
+
+	useEffect(() => {
+		if (!loading && !course) {
+			router.replace("/grades");
+		}
+	}, [course, loading, router]);
+
+	if (!loading && !course) {
+		return null;
+	}
 
 	return (
 		<motion.div className="p-5 md:p-10 flex-1">

@@ -1,5 +1,5 @@
 import React from "react";
-import Router, { useRouter } from "next/router";
+import { useRouter } from "next/router";
 
 export default function NotFound() {
 	const router = useRouter();
@@ -7,9 +7,13 @@ export default function NotFound() {
 	React.useEffect(() => {
 		if (window) {
 			console.log(window.location.pathname);
-			router.push(window.location.pathname);
+			if (/^\/(?:[^/]+\/)?grades\/\d+\/?$/.test(window.location.pathname)) {
+				router.replace("/grades");
+			} else {
+				router.push(window.location.pathname);
+			}
 		}
-	}, []);
+	}, [router]);
 
 	return (
 		<div className="p-5 md:p-10">
