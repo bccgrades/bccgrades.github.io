@@ -10,7 +10,10 @@ import {
 	Grades as GradesType,
 	Course,
 	genTable,
-	abbreviate
+	abbreviate,
+	mergeSemesterGrades,
+	recomputeSemesterGrades,
+	preserveSemesterCaches
 } from "../../utils/grades";
 import GradeField from "../../components/GradeField";
 import CategoryField from "../../components/CategoryField";
@@ -82,10 +85,22 @@ export default function Grades({
 	useEffect(() => {
 		try {
 			if (!grades&&client) {
-				client.gradebook(undefined, undefined, false).then((res) => {
-					let parsedGrades = parseGrades(unwrapStudentVueResponse(res));
-					setGrades(parsedGrades);
+				client.gradebook(undefined, undefined, false).then(async (res) => {
+					const parsedGrades = parseGrades(unwrapStudentVueResponse(res));
+					const periodCaches = await Promise.all(
+						parsedGrades.periods.map(async ({ index }) =>
+							parseGrades(
+								unwrapStudentVueResponse(
+									await client.gradebook(index, undefined, false)
+								)
+							)
+						)
+					);
+					setGrades(mergeSemesterGrades(parsedGrades, periodCaches));
 					setPeriod(parsedGrades.period.index);
+					setLoading(false);
+				}).catch((err) => {
+					createError(err.message);
 					setLoading(false);
 				});
 			}
@@ -104,7 +119,7 @@ export default function Grades({
 			update,
 			parseFloat(val)
 		);
-		setGrades({ ...temp });
+		setGrades(recomputeSemesterGrades({ ...temp }));
 	};
 
 	const handleChange = (e) => setTitle(e.target.value);
@@ -122,7 +137,7 @@ export default function Grades({
 		temp.courses[parseInt(index as string)] = addAssignment(
 			temp.courses[parseInt(index as string)]
 		);
-		setGrades({ ...temp });
+		setGrades(recomputeSemesterGrades({ ...temp }));
 	};
 
 	const del = (id: number) => {
@@ -131,7 +146,7 @@ export default function Grades({
 			temp.courses[parseInt(index as string)],
 			id
 		);
-		setGrades({ ...temp });
+		setGrades(recomputeSemesterGrades({ ...temp }));
 	};
 
 	const updateCat = (val: string, assignmentId: number) => {
@@ -141,7 +156,7 @@ export default function Grades({
 			assignmentId,
 			val
 		);
-		setGrades({ ...temp });
+		setGrades(recomputeSemesterGrades({ ...temp }));
 	};
 
 	const OpenModal = (assignmnetId: number) => {
@@ -153,17 +168,32 @@ export default function Grades({
 
 	const update = (p: number, forceRefresh = false) => {
 		setLoading(true);
-		client
-			.gradebook(p, undefined, forceRefresh)
-			.then((res) => {
-				setGrades(parseGrades(unwrapStudentVueResponse(res)));
+		Promise.all(
+			grades.periods.map(async ({ index }) => ({
+				index,
+				grades: parseGrades(
+					unwrapStudentVueResponse(
+						await client.gradebook(index, undefined, forceRefresh)
+					)
+				),
+			}))
+		)
+			.then((responses) => {
+				const periodCaches = preserveSemesterCaches(
+					grades,
+					responses.map(({ grades }) => grades)
+				);
+				const selected = periodCaches.find(
+					(cache) => cache.period.index === p
+				);
+				if (!selected) throw new Error("Selected period is unavailable");
+				setGrades(mergeSemesterGrades(selected, periodCaches));
 				setPeriod(p);
-				setLoading(false);
 			})
 			.catch((err) => {
 				createError(err.message);
-				setLoading(false);
-			});
+			})
+			.finally(() => setLoading(false));
 	};
 
 	const editTitle=()=>{
@@ -431,6 +461,20 @@ export default function Grades({
 							<p>Total</p>
 						</div>
 					</div>
+					{course?.semesterGrade && (
+						<div className="mt-2.5 w-full bg-gray-200 rounded-full dark:bg-gray-700">
+							<div
+								className={`bg-${course.semesterGrade.color}-400 text-xs md:text-sm font-medium text-left pl-2 p-0.5 leading-none rounded-full h-4 md:h-6`}
+								style={{
+									width: `${course.semesterGrade.raw < 100 ? course.semesterGrade.raw : 100}%`,
+								}}
+							>
+								<p>
+									Semester ({course.semesterGrade.raw}%)
+								</p>
+							</div>
+						</div>
+					)}
 					{course?.categories.map(({ name, grade, points }, i) => (
 						<div
 							key={i}

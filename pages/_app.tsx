@@ -6,18 +6,19 @@ import { Flowbite, Toast, useTheme } from "flowbite-react";
 import Topbar from "../components/TopBar";
 import SideBar from "../components/SideBar";
 import MobileBar from "../components/MobileBar";
-import { Grades,parseGrades } from "../utils/grades";
+import { Grades, parseGrades, mergeSemesterGrades } from "../utils/grades";
 import Head from "next/head";
 import { HiX } from "react-icons/hi";
 import { AnimateSharedLayout } from "framer-motion";
 import Cookies from "js-cookie";
 import useWindowSize from '../hooks/useWindowSize';
-import { Analytics } from "@vercel/analytics/react";
 import allDistricts from "../lib/districts";
 import Script from "next/script";
 import {
 	unwrapStudentVueResponse,
 } from "../utils/studentvue";
+
+const STUDENT_VUE_PROXY = "https://student-vue.bccgrades.workers.dev";
 
 interface Toast {
 	title: string;
@@ -40,17 +41,37 @@ function MyApp({ Component, pageProps }) {
 	const [currentPeriod, setCurrentPeriod] = useState<number>();
 	const [loading, setLoading] = useState(false);
 	const [rootAuthChecked, setRootAuthChecked] = useState(false);
-	const [referal,setReferal]=useState(false);
 	const [districts, setDistricts] = useState(allDistricts);
 	const { width } = useWindowSize();
 	const isMediumOrLarger = width >= 768;
+
+	useEffect(() => {
+		if (process.env.NODE_ENV !== "development" || !("serviceWorker" in navigator)) {
+			return;
+		}
+
+		navigator.serviceWorker.getRegistrations().then(async (registrations) => {
+			if (registrations.length === 0) {
+				return;
+			}
+
+			await Promise.all(registrations.map((registration) => registration.unregister()));
+			if (
+				navigator.serviceWorker.controller &&
+				sessionStorage.getItem("sw-development-reloaded") !== "true"
+			) {
+				sessionStorage.setItem("sw-development-reloaded", "true");
+				window.location.reload();
+			}
+		});
+	}, []);
 
 	const login = async (
 		username: string,
 		password: string,
 		save: boolean,
 		url?: string,
-		encrypted?:boolean
+		encrypted?: boolean
 	) => {
 		setLoading(true);
 		const district = url || districtURL;
@@ -62,13 +83,13 @@ function MyApp({ Component, pageProps }) {
 			password: password,
 			districtUrl: districtEndpoint,
 			encrypted: encrypted || false,
-		}, "https://studentvuelib.up.railway.app");
+		}, STUDENT_VUE_PROXY);
 			let passwordSave = Promise.resolve();
 			if (save) {
 				localStorage.setItem("remember", "true");
 				Cookies.set("username", username, { expires: 7, secure: false, sameSite: "Lax" });
 				if (!encrypted) {
-					passwordSave = fetch("https://studentvuelib.up.railway.app/encryptPassword", {
+					passwordSave = fetch(`${STUDENT_VUE_PROXY}/encryptPassword`, {
 						method: "POST",
 						headers: { "Content-Type": "application/json" },
 						body: JSON.stringify({ password }),
@@ -91,73 +112,56 @@ function MyApp({ Component, pageProps }) {
 				createError(err.message);
 			});
 
-			await fetchedClient.gradebook(undefined, undefined, true).then((freshGradebook) => {
+			try {
+				const freshGradebook = await fetchedClient.gradebook(undefined, undefined, true);
 				setClient(fetchedClient);
 				const rawGradebook = unwrapStudentVueResponse(freshGradebook);
-				const parsedGrades=parseGrades(rawGradebook);
-				setGrades(parsedGrades);
+				const parsedGrades = parseGrades(rawGradebook);
+				const periodCaches = await Promise.all(
+					parsedGrades.periods.map(async ({ index }) =>
+						parseGrades(
+							unwrapStudentVueResponse(
+								await fetchedClient.gradebook(index, undefined, false)
+							)
+						)
+					)
+				);
+				setGrades(
+					mergeSemesterGrades(parsedGrades, periodCaches)
+				);
 				setCurrentPeriod(parsedGrades.period.index);
 				setPeriod(parsedGrades.period.index);
-				if(router.pathname=="/"||router.pathname=="/login"){router.push("/grades")}
+				if (router.pathname === "/" || router.pathname === "/login") {
+					await router.push("/grades");
+				}
 				setLoading(false);
 				return true;
-			})
-			.catch((err) => {
+			} catch (err) {
 				console.log(err);
-				createError(err.message)
+				const message =
+					err instanceof Error
+						? err.message
+						: typeof err === "object" && err !== null && "message" in err
+							? String((err as { message: unknown }).message)
+							: String(err);
+				createError(message);
 				setLoading(false);
 				if (router.pathname === "/") {
 					setRootAuthChecked(true);
-					router.replace("/login");
+					await router.replace("/login");
 				}
-			});
-
-		return false;
+				return false;
+			}
 	};
-
-	useEffect(() => {
-		const urlParams = new URLSearchParams(window.location.search);
-		const referrer = urlParams.get('ref')
-		if (referrer === 'klinn') {
-			setReferal(true);
-	}
-	  }, []);
-
-
-	useEffect(()=>{
-		//replace when the updated logic from adsplatform is finished
-		if(client && referal){
-			try{
-				fetch("https://studentvuelib.up.railway.app/refferals",{
-				  'method':'POST',
-				  'headers': { 'Content-Type': 'application/json' },
-				  'body': JSON.stringify({'validation':'f7c3c1ce7613fce0b595a3eaf48f1ad8'})
-	  
-				})
-			  }catch(error){console.log("idk")}
-		}
-
-//just make a deploy
-	},[client])
 
 	useEffect(()=>{
 		if(client!==undefined&&studentInfo==undefined){
 			client.studentInfo().then(info=>{
 				info = unwrapStudentVueResponse(info);
 				setStudentInfo(info)
-				fetch("https://studentvuelib.up.railway.app" + "/logLogin", {
-					'method': 'POST',
-					'headers': { 'Content-Type': 'application/json' },
-					'body': JSON.stringify({ 'username': client.username,'schoolName':info.currentSchool})
-				})
 			}).catch(error=>{client.ChildList().then(info=>{
 				info = unwrapStudentVueResponse(info);
 				setStudentInfo(info);
-				fetch("https://studentvuelib.up.railway.app" + "/logLogin", {
-					'method': 'POST',
-					'headers': { 'Content-Type': 'application/json' },
-					'body': JSON.stringify({ 'username': client.username,'schoolName':info.currentSchool})
-				})
 
 			}).catch()
 		
@@ -202,6 +206,10 @@ function MyApp({ Component, pageProps }) {
 
 	function createError(message:string){
 		console.log("Verbose Error: ",message)
+		const rtErrorMatch = message.match(/ERROR_MESSAGE=["']([^"']+)["']/);
+		if (rtErrorMatch?.[1]) {
+			message = rtErrorMatch[1];
+		}
 		const preSets={"upgraded":"API Token Expired, come back soon?","incorrect":"Username or Password is Incorrect","invalid":"Username or Password is Incorrect","load failed":"Network Error","failed to fetch":"Network Error:Try Again Later","socket":"Network Error"};
 		for(let key in preSets){
 			if(message.toLowerCase().includes(key)){var message=preSets[key];break}
@@ -245,23 +253,8 @@ const logout = async () => {
 
 	return (
 		<Flowbite>
-			<Analytics/>
 			<Head>
 				<title>Grade Melon</title>
-
-				<meta name="monetag" content="60496f145aa140bed68b191bae702c75"></meta>
-         <script async src="https://www.googletagmanager.com/gtag/js?id=G-3YWWBKH03T"></script>
-
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', 'G-3YWWBKH03T');
-              `,
-            }}
-          />
 			</Head>
 			<div className="fixed p-5 z-[60]">
 				{toasts.map(({ title, type }, i) => (

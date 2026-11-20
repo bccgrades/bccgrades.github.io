@@ -3,8 +3,6 @@ import { useRouter } from "next/router";
 import { Modal, Spinner } from "flowbite-react";
 import { BiSearchAlt } from "react-icons/bi";
 import Head from "next/head";
-import StudentVue from "studentvue";
-import Script from "next/script";
 
 import Cookies from "js-cookie";
 
@@ -66,17 +64,26 @@ export default function Login({
 	}, []);
 
 	const findDistricts = async () => {
-		StudentVue.findDistricts(zipCode)
-			.then((res) => {
-				if(res.length===0){createError("No districts found for that zip code");return}
-				else{
-				setDistricts(res);
-				setDistrictURL(res[0].parentVueUrl)}
-			})
-			.catch((err) => {
-				console.log(err);
-				createError(err.message)
+		try {
+			const response = await fetch("https://student-vue.bccgrades.workers.dev/districts", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ zipCode }),
 			});
+			const res = await response.json();
+			if (!response.ok) {
+				throw new Error(res.message || "Unable to find districts");
+			}
+			if (res.length === 0) {
+				createError("No districts found for that zip code");
+				return;
+			}
+			setDistricts(res);
+			setDistrictURL(res[0].parentVueUrl);
+		} catch (err) {
+			console.log(err);
+			createError(err instanceof Error ? err.message : "Unable to find districts");
+		}
 	};
 
 	return (
@@ -84,7 +91,6 @@ export default function Login({
 			<Head>
 				<title>Login</title>
 			</Head>
-			<Script src="//servedby.eleavers.com/ads/ads.php?t=MzExNjc7MjEyNDQ7c3F1YXJlLnNxdWFyZV9ib3g=&index=1"/>
 			<Modal show={showModal} onClose={() => setShowModal(false)}>
 				<Modal.Header>Choose School District</Modal.Header>
 				<Modal.Body>

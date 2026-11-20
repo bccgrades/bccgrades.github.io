@@ -8,7 +8,7 @@ export default function privacy() {
 			<p className="pt-5">
 				Our privacy policy is simple and straightforward. We do not collect any data.
 				We use cookies to store your preferences and to improve your experience on our site.
-				If you checked the &apos;remember me&apos; box, a cookie is created to remember your username and an ecrypted version of your password.
+				If you checked the &apos;remember me&apos; box, a cookie is created to remember your username and an encrypted version of your password.
 				These login cookies are deleted after a week or when you log out, whichever comes first.
 			</p>
 			<br/>

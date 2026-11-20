@@ -1,13 +1,10 @@
-import React, { useState, useEffect,useRef } from "react";
+import React, { useState } from "react";
 import { DarkThemeToggle } from "flowbite-react";
 import Link from "next/link";
 import { FiLogOut } from "react-icons/fi";
 import { BsQuestionLg } from "react-icons/bs";
-import { RiCloseCircleLine } from "react-icons/ri";
 import { MdOutlinePrivacyTip } from "react-icons/md";
-import Cookies from "js-cookie";
 import dynamic from "next/dynamic";
-import {useRouter} from "next/router";
 import { publicPath } from "../lib/paths";
 
 interface TopBarProps {
@@ -25,108 +22,6 @@ const DarkModeToggle = dynamic(() => import('../components/Toggle'), {
 
 export default function TopBar({ studentInfo, logout, client }: TopBarProps) {
 	const [dropdown, setDropdown] = useState(false);
-	const [advertisePWA, setAdvertisePWA] = useState(false);
-	const [advertiseDiscord, setAdvertiseDiscord] = useState(false);
-	const [advertiseBrowser,setAdvertiseBrowser]=useState(false);
-	const [partner,setPartner]=useState(false);
-	const [fade,setFade]=useState(false)
-	const [closed,setClosed]=useState(false);
-	const router = useRouter();
-	const elementRef=useRef(null)
-	const animationRef = useRef(null);
-	const opacityRef = useRef(200);
-
-	const fadeTime=20000
-
-	useEffect(() => {
-		if (!window.matchMedia("(display-mode: standalone)").matches) {
-			if (localStorage.getItem("advertisePWA") === null) {
-				setAdvertisePWA(true);
-				//localStorage.setItem("advertisePWA", "true");
-			}
-			console.log("This is not running as standalone.");
-		}
-	}, []);
-
-	useEffect(() => {
-			if (localStorage.getItem("advertiseDiscord") === null) {
-				setAdvertiseDiscord(true);
-				//localStorage.setItem("advertisePWA", "true");
-			}
-
-	
-
-
-			if (navigator.userAgent.includes('Instagram') === true) {
-				setAdvertiseBrowser(true);
-				
-			}
-		
-	}, []);
-
-
-	const fadeOut = () => {
-try{
-		if(opacityRef.current ==200){
-			opacityRef.current=100;
-			elementRef.current.style.opacity=1
-		}
-
-		if (opacityRef.current <= 0) {
-		  cancelAnimationFrame(animationRef.current);
-			setPartner(false)
-		  return;
-		}
-	  
-		// Decrease by 1 every frame (~16.7ms at 60fps)
-		// To take 10 seconds, we need to decrease by 0.167 per frame
-		// (100 / (10 * 60))
-		opacityRef.current -= 0.167;
-		
-		if (elementRef.current) {
-		  elementRef.current.style.opacity = opacityRef.current / 100;
-		}
-	  
-		animationRef.current = requestAnimationFrame(fadeOut);
-	  }catch(error){console.log(error)}};
-
-	useEffect(()=>{
-		if (Cookies.get("partner") == undefined&&["/faq","/"].includes(router.pathname)) {
-			setPartner(true);
-			opacityRef.current=200
-			
-
-			
-		}
-		else{setPartner(false)}
-
-
-
-	},[router])
-
-
-	useEffect(()=>{
-		if(partner)fadeOut();
-	},[partner])
-
-
-
-
-	const closeAdvertisePWA = () => {
-		setAdvertisePWA(false);
-		localStorage.setItem("advertisePWA", "false");
-	};
-
-
-	const closePartner = () => {
-		setPartner(false);
-		Cookies.set("partner","false",{expires:14})
-	};
-
-	const closeAdvertiseDiscord = () => {
-		setAdvertiseDiscord(false);
-		localStorage.setItem("advertiseDiscord", "false");
-	};
 
 
 	return (
@@ -231,82 +126,6 @@ try{
 					</div>
 				</nav>
 
-			<div className="absolute top-0 left-0 w-full z-40">
-				{!advertiseBrowser && partner && (
-					<div ref={elementRef} className={`w-full bg-primary-11 px-4 py-3 text-white bg-opacity-90`}>
-						<p className="text-center text-sm font-medium flex gap-2 justify-center items-center">
-							<img src={publicPath("/assets/partner.webp")} alt="" />
-							<Link
-								onClick={closePartner}
-								href="https://klinn.works/"
-								className="underline decoration-2 pl-1"
-							>
-								Find internships, research programs, competitions and more with Klinn!
-							</Link>
-							{/*
-							<button onClick={closePartner}>
-								<RiCloseCircleLine className="inline-block" size="1.1rem" />
-							</button>*/}
-						</p>
-					</div>
-				)}
-
-				{!advertiseBrowser && !partner && advertisePWA && client && (
-					<div className="w-full bg-primary-600 px-4 py-3 text-white bg-opacity-90">
-						<p className="text-center text-sm font-medium flex gap-2 justify-center">
-							<span>
-								Want to use Grade Melon as an app?
-								<Link
-									onClick={() => setAdvertisePWA(false)}
-									className="underline decoration-2 pl-1"
-									href="/faq?refer=app"
-								>
-									Check out how!
-								</Link>
-							</span>
-							<button onClick={closeAdvertisePWA}>
-								<RiCloseCircleLine className="inline-block" size="1.1rem" />
-							</button>
-						</p>
-					</div>
-				)}
-
-				{!advertiseBrowser && !advertisePWA && advertiseDiscord && client && (
-					<div className="w-full bg-primary-600 px-4 py-3 text-white bg-opacity-90">
-						<p className="text-center text-sm font-medium flex gap-2 justify-center ">
-							<span>
-								Want to contribute?
-								<Link
-									onClick={() => setAdvertiseDiscord(false)}
-									className="underline decoration-2 pl-1"
-									href="https://discord.gg/nwRs8WcQGc"
-								>
-									Join the Discord!
-								</Link>
-							</span>
-							<button onClick={closeAdvertiseDiscord}>
-								<RiCloseCircleLine className="inline-block" size="1.1rem" />
-							</button>
-						</p>
-					</div>
-				)}
-
-				{advertiseBrowser && !closed && (
-					<div className="w-full bg-primary-600 px-4 py-3 text-white bg-opacity-90 ">
-						<p className="text-center text-sm font-medium flex gap-2 justify-center">
-							<span>
-								You&apos;re viewing in Instagram!
-								<p className="underline decoration-2 pl-1">
-									Try it in your browser!
-								</p>
-							</span>
-							<button onClick={() => setClosed(true)}>
-								<RiCloseCircleLine className="inline-block" size="1.1rem" />
-							</button>
-						</p>
-					</div>
-				)}
-			</div>
 		</div>
 	);
 }

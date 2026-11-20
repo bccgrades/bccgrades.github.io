@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import Head from "next/head";
-import { useRouter } from "next/router";
 import { Spinner } from "flowbite-react";
 import { Bar } from "react-chartjs-2";
 import {
@@ -34,33 +33,55 @@ interface AttendanceProps {
 }
 
 export default function Attendance({ client,createError}: AttendanceProps) {
-	const router = useRouter();
 	const [loading, setLoading] = useState(true);
 	const [data, setData] = useState<AttendanceType>();
 	const [barData, setBarData] = useState<any>();
 
 	useEffect(() => {
-		try {
-			if(!client.loadedAttendance){
-			client.attendance().then((res) => {
-				setData(res);
-				setLoading(false);
-				let temp = parseBarData(res?.absences);
-				setBarData(temp);
-				client.loadedAttendance=[res,temp]
-				console.log(temp);
-			}).catch(error=>{createError(error.message)});}else{
-				setData(client.loadedAttendance[0]);
-				setBarData(client.loadedAttendance[1]);
-				setLoading(false);
+		let cancelled = false;
 
+		const loadAttendance = async () => {
+			try {
+				if (client?.loadedAttendance) {
+					setData(client.loadedAttendance[0]);
+					setBarData(client.loadedAttendance[1]);
+					setLoading(false);
+					return;
+				}
+
+				const response = await client.attendance();
+				const attendance =
+					Array.isArray(response) ? response[0] : response;
+
+				if (cancelled) {
+					return;
+				}
+
+				const chartData = parseBarData(attendance?.absences ?? []);
+				setData(attendance);
+				setBarData(chartData);
+				client.loadedAttendance = [attendance, chartData];
+				setLoading(false);
+			} catch (error) {
+				if (!cancelled) {
+					createError(
+						error instanceof Error
+							? error.message
+							: "Unable to load attendance"
+					);
+					setLoading(false);
+				}
 			}
-		} catch {
-			if (localStorage.getItem("remember") === "false") {
-				console.log("womp womp")
-			}
+		};
+
+		if (client) {
+			loadAttendance();
 		}
-	}, [client]);
+
+		return () => {
+			cancelled = true;
+		};
+	}, [client, createError]);
 
 	return (
 		<div className="flex-1 p-5 md:p-10">

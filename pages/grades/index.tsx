@@ -9,6 +9,8 @@ import {
 	Grades as GradesType,
 	calculateGPA,
 	updateGPA,
+	mergeSemesterGrades,
+	preserveSemesterCaches,
 } from "../../utils/grades";
 import { Modal } from "flowbite-react";
 import { motion } from "framer-motion";
@@ -64,10 +66,23 @@ export default function Grades({
 		try {
 			if (!grades && client) {
 				try {
-					client.gradebook(undefined, undefined, false).then((res) => {
-						let parsedGrades = parseGrades(unwrapStudentVueResponse(res));
-						setGrades(parsedGrades);
+					client.gradebook(undefined, undefined, false).then(async (res) => {
+						const parsedGrades = parseGrades(unwrapStudentVueResponse(res));
+						const periodCaches = await Promise.all(
+							parsedGrades.periods.map(async ({ index }) =>
+								parseGrades(
+									unwrapStudentVueResponse(
+										await client.gradebook(index, undefined, false)
+									)
+								)
+							)
+						);
+						setGrades(mergeSemesterGrades(parsedGrades, periodCaches));
 						setPeriod(parsedGrades.period.index);
+						setLoading(false);
+					}).catch((err) => {
+						console.log(err);
+						createError(err.message);
 						setLoading(false);
 					});
 				} catch (err) {
@@ -85,18 +100,33 @@ export default function Grades({
 
 	const update = (p: number) => {
 		setLoading(true);
-		client
-			.gradebook(p, undefined, false)
-			.then((res) => {
-				setGrades(parseGrades(unwrapStudentVueResponse(res)));
-				setLoading(false);
+		Promise.all(
+			grades.periods.map(async ({ index }) => ({
+				index,
+				grades: parseGrades(
+					unwrapStudentVueResponse(
+						await client.gradebook(index, undefined, false)
+					)
+				),
+			}))
+		)
+			.then((responses) => {
+				const periodCaches = preserveSemesterCaches(
+					grades,
+					responses.map(({ grades }) => grades)
+				);
+				const selected = periodCaches.find(
+					(cache) => cache.period.index === p
+				);
+				if (!selected) throw new Error("Selected period is unavailable");
+				setGrades(mergeSemesterGrades(selected, periodCaches));
 				setPeriod(p);
 			})
 			.catch((err) => {
 				console.log(err);
 				createError(err.message);
-				setLoading(false);
-			});
+			})
+			.finally(() => setLoading(false));
 	};
 
 	const refresh = async () => {
@@ -128,8 +158,22 @@ export default function Grades({
 				throw new Error("Selected period is unavailable");
 			}
 
+			const periodCaches = responses.map(({ index, response }) => ({
+				index,
+				grades: parseGrades(unwrapStudentVueResponse(response)),
+			}));
+			const preservedCaches = periodCaches.map(({ grades }) => grades);
+			const selected = preservedCaches.find(
+				(cache) => cache.period.index === selected
+			);
+			if (!selected) {
+				throw new Error("Selected period is unavailable");
+			}
 			setGrades(
-				parseGrades(unwrapStudentVueResponse(selectedResponse.response))
+				mergeSemesterGrades(
+					selected,
+					preservedCaches
+				)
 			);
 			setPeriod(selected);
 		} catch (err) {

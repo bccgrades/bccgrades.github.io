@@ -69,7 +69,7 @@ const parsePeriods = (absences: Absense[]): string[] => {
 		});
 	});
 
-	return periodLabels.sort();
+	return periodLabels.sort((a, b) => Number(a) - Number(b));
 };
 
 const parseBarData = (
@@ -79,34 +79,32 @@ const parseBarData = (
 	datasets: any[];
 } => {
 	if (!absences) return { labels: [], datasets: [] };
-	let labels = parsePeriods(absences);
+	const labels = parsePeriods(absences);
+	const datasets: any[] = [];
 
-	let datasets: any[] = [];
-	absences.forEach(({ periods }, i) => {
-		periods.forEach((period) => {
-			if (!period.name) return;
-			let index = datasets.findIndex(
-				(dataSet) => dataSet.label === period.name
+	for (const { periods } of absences) {
+		for (const period of periods) {
+			if (!period.name) continue;
+
+			let dataset = datasets.find(
+				(candidate) => candidate.label === period.name
 			);
-			if (index === -1) {
-				let data = {};
-				let set = {
+			if (!dataset) {
+				dataset = {
 					label: period.name,
 					borderWidth: 1,
 					backgroundColor: getColor(period.name),
-					data: {},
+					data: labels.map(() => 0),
 				};
-				labels.forEach((label) => {
-					if (label === String(period.period)) data[label] = 1;
-					else data[label] = 0;
-				});
-				set.data = data;
-				datasets.push(set);
-			} else {
-				datasets[index].data[period.period]++;
+				datasets.push(dataset);
 			}
-		});
-	});
+
+			const periodIndex = labels.indexOf(String(period.period));
+			if (periodIndex !== -1) {
+				dataset.data[periodIndex]++;
+			}
+		}
+	}
 
 	return {
 		labels,

@@ -11,10 +11,12 @@ export default class MyDocument extends Document {
 						type="image/png"
 						href={publicPath("/favicon.png")}
 					/>
-          <link
-          	rel="manifest"
-          	href={publicPath("/manifest.json")}
-          />
+					{process.env.NODE_ENV === "production" && (
+						<link
+							rel="manifest"
+							href={publicPath("/manifest.json")}
+						/>
+					)}
           <link
           	rel="apple-touch-icon"
           	href={publicPath("/assets/icon.png")}
